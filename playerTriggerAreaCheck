@@ -1,0 +1,26 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class playerTriggerAreaCheck : MonoBehaviour
+{
+    private enemy_control enemy_Control;
+    // Start is called before the first frame update
+    private void Awake()
+    {
+        enemy_Control = GetComponentInParent<enemy_control>();
+
+    }
+
+    // Update is called once per frame
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            gameObject.SetActive(false);
+            enemy_Control.target = collision.transform;
+            enemy_Control.inRange = true;
+            enemy_Control.hotZone.SetActive(true);
+        }
+    }
+}

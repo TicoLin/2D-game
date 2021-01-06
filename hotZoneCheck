@@ -1,0 +1,45 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class hotZoneCheck : MonoBehaviour
+{
+    private enemy_control enemy_Control;
+    private bool inRange;
+    private Animator animator;
+    // Start is called before the first frame update
+    private void Awake()
+    {
+        enemy_Control = GetComponentInParent<enemy_control>();
+        animator = GetComponentInParent<Animator>();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if(inRange && !animator.GetCurrentAnimatorStateInfo(0).IsName("attack"))
+        {
+            enemy_Control.Flip();
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            inRange = true;
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collider)
+    {
+        if (collider.gameObject.CompareTag("Player"))
+        {
+            inRange = false;
+            gameObject.SetActive(false);
+            enemy_Control.playTrigger.SetActive(true);
+            enemy_Control.inRange = false;
+            enemy_Control.SelectTarget();
+        }
+    }
+}

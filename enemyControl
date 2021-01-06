@@ -1,0 +1,233 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class enemy_control : MonoBehaviour
+{
+    #region Public Varibles
+    public int hp = 0;
+    public int max_hp = 0;
+    public GameObject hp_bar;
+
+
+    public Animator animator;
+    public float attackDistance;
+    public float moveSpeed;
+    public float timer;
+
+    public Transform leftLimit;
+    public Transform rightLimit;
+    [HideInInspector] public Transform target;
+    [HideInInspector] public bool inRange;
+    public GameObject hotZone;
+    public GameObject playTrigger;
+    #endregion
+
+    #region Private Varibles
+
+
+  
+    private bool onHit;
+    private bool isDead;
+
+ 
+    private float distance;
+    private bool attackMode;
+   
+    private bool cooling;
+    private float intTimer;
+    #endregion
+
+
+    void Start()
+    {
+
+        hp = max_hp;
+        onHit = false;
+        isDead = false;
+        
+    }
+
+    private void Awake()
+    {
+        SelectTarget();
+        intTimer = timer;
+        animator=GetComponent<Animator>();
+    }
+    // Update is called once per frame
+    void Update()
+    {
+        DeathChecker();
+
+        HpBarChecker();
+        if (!attackMode && !animator.GetCurrentAnimatorStateInfo(0).IsName("enemy_onHit_ani") && !isDead)
+        {
+            Move();
+        }
+
+        if(!IsInsideOfLimits() && !inRange && !animator.GetCurrentAnimatorStateInfo(0).IsName("enemy_attack_ani"))
+        {
+            SelectTarget();
+        }
+
+
+        if(inRange)
+        {
+            EnemyLogic();
+        }
+
+
+        //update status action
+
+
+
+
+    }
+
+    private void HpBarChecker()
+    {
+        if (hp < 0)
+        {
+            hp = 0;
+        }
+        float _percent = ((float)hp / (float)max_hp);
+        hp_bar.transform.localScale = new Vector3(_percent, hp_bar.transform.localScale.y, hp_bar.transform.localScale.z); //hp bar movement
+    }
+
+    private void DeathChecker()
+    {
+        if (hp <= 0) //death ani triggered when hp becomes 0
+        {
+            animator.SetInteger("isDead", 1);
+            animator.SetInteger("walk", 0);
+            animator.SetInteger("idle", 0);
+            isDead = true;
+        }
+    }
+    private void Death()
+    {
+        Destroy(this.gameObject);
+    }
+
+    void EnemyLogic()
+    {
+        distance = Vector2.Distance(transform.position, target.position);
+        if (distance > attackDistance && inRange)
+        {
+         
+            StopAttack();
+
+        }
+        else if (attackDistance >= distance && cooling == false)
+        {
+            Attack();
+        }
+
+        if (onHit)
+        {
+            animator.SetInteger("onHit", 1);
+            onHit = false;
+        }
+        else
+        {
+            animator.SetInteger("onHit", 0);
+        }
+        
+
+        if (cooling)
+        {
+            CoolDown();
+            animator.SetInteger("attack", 0);
+            animator.SetInteger("idle", 1);
+        }
+    }
+
+    void Move()
+    {
+        animator.SetInteger("walk", 1);
+        animator.SetInteger("idle", 0);
+        animator.SetInteger("attack", 0);
+        if (!animator.GetCurrentAnimatorStateInfo(0).IsName("enemy_attack_ani") && !animator.GetCurrentAnimatorStateInfo(0).IsName("enemy_onHit_ani"))
+        {
+            
+            Vector2 targetPosition = new Vector2(target.position.x, transform.position.y);
+            transform.position = Vector2.MoveTowards(transform.position, targetPosition, moveSpeed * Time.deltaTime);
+
+        }
+    }
+
+    void Attack()
+    {
+        timer = intTimer;
+        attackMode = true;
+
+        animator.SetInteger("walk", 0);
+        animator.SetInteger("idle", 0);
+        animator.SetInteger("attack", 1);
+    }
+
+    void StopAttack()
+    {
+        cooling = false;
+        attackMode = false;
+        animator.SetInteger("attack", 0);
+    }
+
+    void CoolDown()
+    {
+        timer -= Time.deltaTime;
+        if(timer<=0 && cooling && attackMode)
+        {
+            cooling = false;
+            timer = intTimer;
+        }
+    }
+
+    public void CoolingChecker()
+    {
+        cooling = true;
+    }
+
+    private bool IsInsideOfLimits()
+    {
+        return transform.position.x > leftLimit.position.x && transform.position.x < rightLimit.position.x;
+    }
+
+    public void SelectTarget()
+    {
+        float distanceToLeft = Vector2.Distance(transform.position, leftLimit.position);
+        float distanceToRight = Vector2.Distance(transform.position, rightLimit.position);
+
+        if (distanceToLeft > distanceToRight)
+        {
+            target = leftLimit;
+        }
+        else
+        {
+            target = rightLimit;
+        }
+
+        Flip();
+    }
+
+    public void Flip()
+    {
+        Vector3 rotation = transform.eulerAngles;
+        if (transform.position.x > target.position.x)
+        {
+            rotation.y = 180f;
+        }
+        else
+        {
+            rotation.y = 0f;
+        }
+
+        transform.eulerAngles = rotation;
+    }
+
+    public void GotDamage(int damage)
+    {
+        hp -= damage;
+        onHit = true;
+    }
+}
